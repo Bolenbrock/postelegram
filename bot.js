@@ -19,7 +19,7 @@ const oauth2Client = new google.auth.OAuth2(
 );
 
 oauth2Client.setCredentials({
-  refresh_token: process.env.GMAIL_REFRESH_TOKEN
+  refresh_token: process.env.GMAIL_REFRESH_TOKEN,
 });
 
 const gmail = google.gmail({ version: 'v1', auth: oauth2Client });
@@ -35,7 +35,7 @@ bot.onText(/\/checkemail/, async (msg) => {
     });
 
     const unreadCount = response.data.messages ? response.data.messages.length : 0;
-    await bot.sendMessage(chatId, `You have ${unreadCount} unread emails.`);
+    await bot.sendMessage(chatId, `У вас ${unreadCount} непрочитанных писем.`);
 
     if (unreadCount > 0) {
       // Get the latest email
@@ -48,14 +48,20 @@ bot.onText(/\/checkemail/, async (msg) => {
         header => header.name === 'Subject'
       );
 
+        const from = latestEmail.data.payload.headers.find(
+            header => header.name === 'From'
+        );
+    
+        const sender = from ? from.value : 'неизвестно';
+
       await bot.sendMessage(
         chatId,
-        `Latest email subject: ${subject ? subject.value : 'No subject'}`
+        `Последнее письмо:\nОт: ${sender}\nТема: ${subject ? subject.value : 'Без темы'}`
       );
     }
   } catch (error) {
     console.error('Error:', error);
-    await bot.sendMessage(chatId, 'Sorry, there was an error checking your emails.');
+    await bot.sendMessage(chatId, 'Извините, произошла ошибка при проверке писем.');
   }
 });
 
@@ -63,10 +69,10 @@ bot.onText(/\/checkemail/, async (msg) => {
 bot.onText(/\/help/, async (msg) => {
   const chatId = msg.chat.id;
   await bot.sendMessage(chatId, 
-    'Available commands:\n' +
-    '/checkemail - Check unread emails\n' +
-    '/help - Show this help message'
+    'Доступные команды:\n' +
+    '/checkemail - Проверить непрочитанные письма\n' +
+    '/help - Показать эту справку'
   );
 });
 
-console.log('Bot is running...');
+console.log('Бот запущен...');
