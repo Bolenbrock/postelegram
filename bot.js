@@ -22,6 +22,13 @@ oauth2Client.setCredentials({
   refresh_token: process.env.GMAIL_REFRESH_TOKEN,
 });
 
+// Логирование переменных среды и oauth2Client
+console.log('GMAIL_CLIENT_ID:', process.env.GMAIL_CLIENT_ID);
+console.log('GMAIL_CLIENT_SECRET:', process.env.GMAIL_CLIENT_SECRET);
+console.log('GMAIL_REFRESH_TOKEN:', process.env.GMAIL_REFRESH_TOKEN);
+console.log('oauth2Client:', oauth2Client);
+
+
 const gmail = google.gmail({ version: 'v1', auth: oauth2Client });
 
 // Command to check unread emails
