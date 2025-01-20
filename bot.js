@@ -13,20 +13,26 @@ bot.onText(/\/start/, (msg) => {
 });
 
 // Gmail API setup
+const clientId = process.env.GMAIL_CLIENT_ID;
+const clientSecret = process.env.GMAIL_CLIENT_SECRET;
+const refreshToken = process.env.GMAIL_REFRESH_TOKEN;
+
+console.log('GMAIL_CLIENT_ID (raw):', clientId);
+console.log('GMAIL_CLIENT_SECRET (raw):', clientSecret);
+console.log('GMAIL_REFRESH_TOKEN (raw):', refreshToken);
+
 const oauth2Client = new google.auth.OAuth2(
-  process.env.GMAIL_CLIENT_ID,
-  process.env.GMAIL_CLIENT_SECRET
+  clientId,
+  clientSecret
 );
 
 oauth2Client.setCredentials({
-  refresh_token: process.env.GMAIL_REFRESH_TOKEN,
+  refresh_token: refreshToken,
 });
 
-// Логирование переменных среды и oauth2Client
-console.log('GMAIL_CLIENT_ID:', process.env.GMAIL_CLIENT_ID);
-console.log('GMAIL_CLIENT_SECRET:', process.env.GMAIL_CLIENT_SECRET);
-console.log('GMAIL_REFRESH_TOKEN:', process.env.GMAIL_REFRESH_TOKEN);
-console.log('oauth2Client:', oauth2Client);
+
+console.log('oauth2Client (JSON):', JSON.stringify(oauth2Client, null, 2));
+
 
 
 const gmail = google.gmail({ version: 'v1', auth: oauth2Client });
