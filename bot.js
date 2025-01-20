@@ -6,6 +6,12 @@ dotenv.config();
 
 const bot = new TelegramBot(process.env.TELEGRAM_BOT_TOKEN, { polling: true });
 
+// Обработчик команды /start
+bot.onText(/\/start/, (msg) => {
+  const chatId = msg.chat.id;
+  bot.sendMessage(chatId, 'Бот запущен! Введите /help для списка команд.');
+});
+
 // Gmail API setup
 const oauth2Client = new google.auth.OAuth2(
   process.env.GMAIL_CLIENT_ID,
