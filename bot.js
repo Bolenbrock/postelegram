@@ -1,20 +1,15 @@
-
 import TelegramBot from 'node-telegram-bot-api';
 import { google } from 'googleapis';
 import dotenv from 'dotenv';
-import NodeCache from 'node-cache';
 
 dotenv.config();
-
-// Инициализация кэша
-const cache = new NodeCache({ stdTTL: 300 }); // Кэш на 5 минут (300 секунд)
 
 // Настройка бота с интервалом polling и таймаутом
 const bot = new TelegramBot(process.env.TELEGRAM_BOT_TOKEN, {
     polling: {
-        interval: 3000, // Интервал между запросами (3 секунды)
-        timeout: 10,    // Таймаут запроса (10 секунд)
-        autoStart: true // Автоматически начать polling
+        interval: 3000,
+        timeout: 10,
+        autoStart: true
     }
 });
 
@@ -27,13 +22,13 @@ bot.onText(/\/start/, (msg) => {
 // Настройки почтовых ящиков
 const mailboxes = {
     mailbox1: {
-        name: "aristoss007", 
+        name: "aristoss007",
         gmailClientId: process.env.GMAIL_CLIENT_ID,
         gmailClientSecret: process.env.GMAIL_CLIENT_SECRET,
         gmailRefreshToken: process.env.GMAIL_REFRESH_TOKEN,
     },
     mailbox2: {
-        name: "aristosand", 
+        name: "aristosand",
         gmailClientId: process.env.GMAIL_CLIENT_ID_2,
         gmailClientSecret: process.env.GMAIL_CLIENT_SECRET_2,
         gmailRefreshToken: process.env.GMAIL_REFRESH_TOKEN_2,
@@ -54,13 +49,11 @@ const createGmailClient = (mailbox) => {
     oauth2Client.on('tokens', (tokens) => {
     if (tokens.refresh_token) {
         console.log(`New refresh token for ${mailbox.name}:`, tokens.refresh_token);
-      // Сохраните новый refresh_token, если он был обновлен
     }
   });
     
   oauth2Client.on('error', (error) => {
     console.error(`Ошибка OAuth2 for ${mailbox.name}:`, error);
-    // Обработайте ошибку, например, уведомите пользователя
   });
     
   return google.gmail({ version: 'v1', auth: oauth2Client });
@@ -78,7 +71,6 @@ bot.onText(/\/checkemail/, async (msg) => {
     await bot.sendMessage(chatId, "Выберите почтовый ящик для проверки:", mailboxKeyboard);
 });
 
-
 // Обработчик нажатия на кнопки
 bot.on('callback_query', async (query) => {
     const chatId = query.message.chat.id;
@@ -94,24 +86,17 @@ bot.on('callback_query', async (query) => {
         }
 
         await checkUnreadEmails(chatId, selectedMailbox);
-         await bot.answerCallbackQuery(query.id);
+        await bot.answerCallbackQuery(query.id);
     }
 });
 
+
 // Функция для проверки почты
 async function checkUnreadEmails(chatId, mailbox) {
-  const cacheKey = `unread_emails_${chatId}_${mailbox.name}`; // Уникальный ключ для кэша
-
-    const cachedData = cache.get(cacheKey);
-      if (cachedData) {
-        await bot.sendMessage(chatId, `У вас ${cachedData.length} непрочитанных писем в ящике ${mailbox.name}.`);
-        return;
-      }
-    
     try {
-      const gmail = createGmailClient(mailbox);
-        
-      // Проверяем, истек ли токен
+        const gmail = createGmailClient(mailbox);
+
+        // Проверяем, истек ли токен
       if (gmail.auth.isTokenExpiring()) {
            const { credentials } = await gmail.auth.refreshAccessToken();
            gmail.auth.setCredentials(credentials);
@@ -123,13 +108,10 @@ async function checkUnreadEmails(chatId, mailbox) {
         });
 
         const unreadMessages = response.data.messages;
-         if (!unreadMessages || unreadMessages.length === 0) {
-             await bot.sendMessage(chatId, `У вас нет непрочитанных писем в ящике ${mailbox.name}.`);
-              return;
-         }
-
-         // Сохраняем данные в кэш
-         cache.set(cacheKey, unreadMessages);
+        if (!unreadMessages || unreadMessages.length === 0) {
+            await bot.sendMessage(chatId, `У вас нет непрочитанных писем в ящике ${mailbox.name}.`);
+            return;
+        }
 
         await bot.sendMessage(chatId, `У вас ${unreadMessages.length} непрочитанных писем в ящике ${mailbox.name}.`);
 
@@ -157,7 +139,7 @@ async function checkUnreadEmails(chatId, mailbox) {
                     `**Ящик:** ${mailbox.name}\n**От:** ${from}\n**Тема:** ${subject}\n**Дата:** ${date}`
                 );
             } catch (e) {
-                console.error('Ошибка получения данных письма:', e);
+                 console.error('Ошибка получения данных письма:', e);
                 await bot.sendMessage(chatId, 'Произошла ошибка при получении данных письма.');
             }
         }
