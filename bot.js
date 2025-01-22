@@ -1,3 +1,4 @@
+
 import TelegramBot from 'node-telegram-bot-api';
 import { google } from 'googleapis';
 import dotenv from 'dotenv';
@@ -26,13 +27,13 @@ bot.onText(/\/start/, (msg) => {
 // Настройки почтовых ящиков
 const mailboxes = {
     mailbox1: {
-        name: "aristoss007", // Изменено на "aristoss007"
+        name: "aristoss007", 
         gmailClientId: process.env.GMAIL_CLIENT_ID,
         gmailClientSecret: process.env.GMAIL_CLIENT_SECRET,
         gmailRefreshToken: process.env.GMAIL_REFRESH_TOKEN,
     },
     mailbox2: {
-        name: "aristosand", // Изменено на "aristosand"
+        name: "aristosand", 
         gmailClientId: process.env.GMAIL_CLIENT_ID_2,
         gmailClientSecret: process.env.GMAIL_CLIENT_SECRET_2,
         gmailRefreshToken: process.env.GMAIL_REFRESH_TOKEN_2,
@@ -174,9 +175,6 @@ bot.onText(/\/help/, async (msg) => {
         '/checkemail - Проверить непрочитанные письма\n' +
         '/help - Показать эту справку'
     );
-});
-
-console.log('Бот запущен...');
 });
 
 console.log('Бот запущен...');
