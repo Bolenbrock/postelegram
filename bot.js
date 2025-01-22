@@ -8,7 +8,7 @@ dotenv.config();
 const bot = new TelegramBot(process.env.TELEGRAM_BOT_TOKEN, {
     polling: {
         interval: 3000,
-        timeout: 10,
+        params: { timeout: 10 }, // Исправлено устаревшее предупреждение
         autoStart: true
     }
 });
@@ -93,14 +93,15 @@ bot.on('callback_query', async (query) => {
 
 // Функция для проверки почты
 async function checkUnreadEmails(chatId, mailbox) {
+    let gmail; // Объявите gmail здесь
     try {
-        const gmail = createGmailClient(mailbox);
-
-        // Проверяем, истек ли токен
-      if (gmail.auth.isTokenExpiring()) {
-           const { credentials } = await gmail.auth.refreshAccessToken();
-           gmail.auth.setCredentials(credentials);
-      }
+        gmail = createGmailClient(mailbox); // Присвойте значение gmail в try
+      
+          // Проверяем, истек ли токен
+         if (gmail.auth.isTokenExpiring()) {
+              const { credentials } = await gmail.auth.refreshAccessToken();
+              gmail.auth.setCredentials(credentials);
+         }
 
         const response = await gmail.users.messages.list({
             userId: 'me',
@@ -139,14 +140,14 @@ async function checkUnreadEmails(chatId, mailbox) {
                     `**Ящик:** ${mailbox.name}\n**От:** ${from}\n**Тема:** ${subject}\n**Дата:** ${date}`
                 );
             } catch (e) {
-                 console.error('Ошибка получения данных письма:', e);
-                await bot.sendMessage(chatId, 'Произошла ошибка при получении данных письма.');
+                console.error('Ошибка получения данных письма:', e);
+                 await bot.sendMessage(chatId, 'Произошла ошибка при получении данных письма.');
             }
         }
     } catch (error) {
-        console.error('Error:', error);
-        await bot.sendMessage(chatId, 'Извините, произошла ошибка при проверке писем.');
-    }
+      console.error('Error:', error);
+      await bot.sendMessage(chatId, 'Извините, произошла ошибка при проверке писем.');
+  }
 }
 
 // Help command
