@@ -8,7 +8,7 @@ dotenv.config();
 const bot = new TelegramBot(process.env.TELEGRAM_BOT_TOKEN, {
     polling: {
         interval: 3000,
-        params: { timeout: 10 }, // Исправлено устаревшее предупреждение
+        params: { timeout: 10 },
         autoStart: true
     }
 });
@@ -37,26 +37,26 @@ const mailboxes = {
 
 // Функция для создания OAuth2 клиента для почтового ящика
 const createGmailClient = (mailbox) => {
-  const oauth2Client = new google.auth.OAuth2(
-    mailbox.gmailClientId,
-    mailbox.gmailClientSecret
-  );
+    const oauth2Client = new google.auth.OAuth2(
+        mailbox.gmailClientId,
+        mailbox.gmailClientSecret
+    );
 
-  oauth2Client.setCredentials({
-    refresh_token: mailbox.gmailRefreshToken,
-  });
-    
+    oauth2Client.setCredentials({
+        refresh_token: mailbox.gmailRefreshToken,
+    });
+
     oauth2Client.on('tokens', (tokens) => {
-    if (tokens.refresh_token) {
-        console.log(`New refresh token for ${mailbox.name}:`, tokens.refresh_token);
-    }
-  });
-    
-  oauth2Client.on('error', (error) => {
-    console.error(`Ошибка OAuth2 for ${mailbox.name}:`, error);
-  });
-    
-  return google.gmail({ version: 'v1', auth: oauth2Client });
+        if (tokens.refresh_token) {
+            console.log(`New refresh token for ${mailbox.name}:`, tokens.refresh_token);
+        }
+    });
+
+    oauth2Client.on('error', (error) => {
+        console.error(`Ошибка OAuth2 for ${mailbox.name}:`, error);
+    });
+
+    return google.gmail({ version: 'v1', auth: oauth2Client });
 };
 
 // Обработчик команды /checkemail
@@ -90,19 +90,18 @@ bot.on('callback_query', async (query) => {
     }
 });
 
-
 // Функция для проверки почты
 async function checkUnreadEmails(chatId, mailbox) {
-    let gmail; // Объявите gmail здесь
+    let gmail; // Объявляем gmail
     try {
-        gmail = createGmailClient(mailbox); // Присвойте значение gmail в try
-      
-          // Проверяем, истек ли токен
-         if (gmail.auth.isTokenExpiring()) {
-              const { credentials } = await gmail.auth.refreshAccessToken();
+        gmail = createGmailClient(mailbox); // Инициализируем gmail
+       
+        // Проверяем, истек ли токен
+        if (gmail && gmail.auth.isTokenExpiring()) { // Проверяем что gmail инициализирован
+             const { credentials } = await gmail.auth.refreshAccessToken();
               gmail.auth.setCredentials(credentials);
-         }
-
+        }
+    
         const response = await gmail.users.messages.list({
             userId: 'me',
             q: 'is:unread'
@@ -140,14 +139,14 @@ async function checkUnreadEmails(chatId, mailbox) {
                     `**Ящик:** ${mailbox.name}\n**От:** ${from}\n**Тема:** ${subject}\n**Дата:** ${date}`
                 );
             } catch (e) {
-                console.error('Ошибка получения данных письма:', e);
+                 console.error('Ошибка получения данных письма:', e);
                  await bot.sendMessage(chatId, 'Произошла ошибка при получении данных письма.');
             }
         }
     } catch (error) {
-      console.error('Error:', error);
-      await bot.sendMessage(chatId, 'Извините, произошла ошибка при проверке писем.');
-  }
+        console.error('Error:', error);
+        await bot.sendMessage(chatId, 'Извините, произошла ошибка при проверке писем.');
+    }
 }
 
 // Help command
