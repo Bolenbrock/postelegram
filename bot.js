@@ -92,16 +92,16 @@ bot.on('callback_query', async (query) => {
 
 // Функция для проверки почты
 async function checkUnreadEmails(chatId, mailbox) {
-    let gmail; // Объявляем gmail
+    let gmail;
     try {
-        gmail = createGmailClient(mailbox); // Инициализируем gmail
-       
-        // Проверяем, истек ли токен
-        if (gmail && gmail.auth.isTokenExpiring()) { // Проверяем что gmail инициализирован
-             const { credentials } = await gmail.auth.refreshAccessToken();
-              gmail.auth.setCredentials(credentials);
+        gmail = createGmailClient(mailbox);
+         // Принудительно обновляем токен перед выполнением запросов, если необходимо
+        if (!gmail.auth.credentials || !gmail.auth.credentials.access_token) {
+            console.log(`Обновление токена для ${mailbox.name}...`);
+            const { token } = await gmail.auth.getAccessToken();
+            gmail.auth.setCredentials({ access_token: token });
         }
-    
+
         const response = await gmail.users.messages.list({
             userId: 'me',
             q: 'is:unread'
@@ -140,7 +140,7 @@ async function checkUnreadEmails(chatId, mailbox) {
                 );
             } catch (e) {
                  console.error('Ошибка получения данных письма:', e);
-                 await bot.sendMessage(chatId, 'Произошла ошибка при получении данных письма.');
+                await bot.sendMessage(chatId, 'Произошла ошибка при получении данных письма.');
             }
         }
     } catch (error) {
