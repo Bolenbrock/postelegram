@@ -1,66 +1,94 @@
-async function checkUnreadEmails(chatId, mailbox) {
+
+
+import TelegramBot from 'node-telegram-bot-api';
+import { google } from 'googleapis';
+import dotenv from 'dotenv';
+
+dotenv.config();
+
+const bot = new TelegramBot(process.env.TELEGRAM_BOT_TOKEN, { polling: true });
+
+// Обработчик команды /start
+bot.onText(/\/start/, (msg) => {
+    const chatId = msg.chat.id;
+    bot.sendMessage(chatId, 'Бот запущен! Введите /help для списка команд.');
+});
+
+// Gmail API setup
+const oauth2Client = new google.auth.OAuth2(
+    process.env.GMAIL_CLIENT_ID,
+    process.env.GMAIL_CLIENT_SECRET
+);
+
+oauth2Client.setCredentials({
+    refresh_token: process.env.GMAIL_REFRESH_TOKEN,
+});
+
+const gmail = google.gmail({ version: 'v1', auth: oauth2Client });
+
+// Command to check unread emails
+bot.onText(/\/checkemail/, async (msg) => {
+    const chatId = msg.chat.id;
+
     try {
-        const gmail = createGmailClient(mailbox); // Инициализируем Gmail клиент
-        const auth = gmail.auth;
-
-        // Проверяем наличие refresh_token и токенов
-        if (!auth.credentials || !auth.credentials.refresh_token) {
-            console.error(`Ошибка: refresh_token отсутствует для ${mailbox.name}`);
-            await bot.sendMessage(chatId, `Ошибка: refresh_token отсутствует для ${mailbox.name}.`);
-            return;
-        }
-
-        // Получаем или обновляем access_token
-        const accessToken = await auth.getAccessToken();
-        if (!accessToken || !accessToken.token) {
-            console.error(`Ошибка: не удалось получить access_token для ${mailbox.name}`);
-            await bot.sendMessage(chatId, `Ошибка: не удалось получить access_token для ${mailbox.name}.`);
-            return;
-        }
-
-        auth.setCredentials({ access_token: accessToken.token });
-
-        // Получаем список непрочитанных сообщений
         const response = await gmail.users.messages.list({
             userId: 'me',
-            q: 'is:unread',
+            q: 'is:unread'
         });
+
 
         const unreadMessages = response.data.messages;
         if (!unreadMessages || unreadMessages.length === 0) {
-            await bot.sendMessage(chatId, `У вас нет непрочитанных писем в ящике ${mailbox.name}.`);
-            return;
-        }
+             await bot.sendMessage(chatId, 'У вас нет непрочитанных писем.');
+             return;
+         }
 
-        await bot.sendMessage(chatId, `У вас ${unreadMessages.length} непрочитанных писем в ящике ${mailbox.name}.`);
+        await bot.sendMessage(chatId, `У вас ${unreadMessages.length} непрочитанных писем.`);
 
-        // Выводим информацию по каждому письму
+        // Get and send headers for each unread email
         for (const message of unreadMessages) {
-            try {
+          try {
                 const email = await gmail.users.messages.get({
                     userId: 'me',
                     id: message.id,
-                    format: 'metadata',
-                    metadataHeaders: ['Subject', 'From', 'Date'],
+                    format: 'metadata', // Получаем только заголовки для оптимизации
+                    metadataHeaders: ['Subject', 'From', 'Date'] // Указываем нужные заголовки
                 });
 
                 const headers = email.data.payload.headers;
-                const subject = headers.find(header => header.name === 'Subject')?.value || 'Без темы';
-                const from = headers.find(header => header.name === 'From')?.value || 'Неизвестный отправитель';
-                const date = headers.find(header => header.name === 'Date')?.value || 'Дата не указана';
+               
+                const subjectHeader = headers.find(header => header.name === 'Subject');
+                const fromHeader = headers.find(header => header.name === 'From');
+                const dateHeader = headers.find(header => header.name === 'Date');
+            
+                const subject = subjectHeader ? subjectHeader.value : 'Без темы';
+                const from = fromHeader ? fromHeader.value : 'Неизвестный отправитель';
+                const date = dateHeader ? dateHeader.value : 'Дата не указана';
+
 
                 await bot.sendMessage(
                     chatId,
-                    `**Ящик:** ${mailbox.name}\n**От:** ${from}\n**Тема:** ${subject}\n**Дата:** ${date}`
+                    `**От:** ${from}\n**Тема:** ${subject}\n**Дата:** ${date}`
                 );
             } catch (e) {
-                console.error('Ошибка получения данных письма:', e);
+                 console.error('Ошибка получения данных письма:', e);
                 await bot.sendMessage(chatId, 'Произошла ошибка при получении данных письма.');
             }
         }
     } catch (error) {
-        console.error('Ошибка проверки почты:', error);
-        await bot.sendMessage(chatId, `Ошибка: не удалось проверить почту для ${mailbox.name}.`);
+        console.error('Error:', error);
+        await bot.sendMessage(chatId, 'Извините, произошла ошибка при проверке писем.');
     }
-}
+});
 
+// Help command
+bot.onText(/\/help/, async (msg) => {
+    const chatId = msg.chat.id;
+    await bot.sendMessage(chatId,
+        'Доступные команды:\n' +
+        '/checkemail - Проверить непрочитанные письма\n' +
+        '/help - Показать эту справку'
+    );
+});
+
+console.log('Бот запущен...');
