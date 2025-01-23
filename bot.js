@@ -39,7 +39,9 @@ const createGmailClient = (mailbox) => {
 // Обработчик команды /start
 bot.onText(/\/start/, (msg) => {
     const chatId = msg.chat.id;
-    bot.sendMessage(chatId, 'Бот запущен! Введите /help для списка команд.');
+    bot.sendMessage(chatId, 'Бот запущен! Проверяем почту...');
+    // Эмулируем ввод команды /checkemail
+    bot.emit('text', { ...msg, text: '/checkemail' });
 });
 
 // Обработчик команды /checkemail
