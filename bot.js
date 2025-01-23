@@ -67,25 +67,6 @@ bot.onText(/\/checkemail/, async (msg) => {
     await bot.sendMessage(chatId, 'Выберите почтовый ящик для проверки:', mailboxKeyboard);
 });
 
-// Обработчик нажатия на кнопки
-bot.on('callback_query', async (query) => {
-    const chatId = query.message.chat.id;
-    const data = query.data;
-
-    if (data.startsWith('check_')) {
-        const mailboxKey = data.split('_')[1];
-        const selectedMailbox = mailboxes[mailboxKey];
-
-        if (!selectedMailbox) {
-            await bot.sendMessage(chatId, 'Ошибка: Неизвестный почтовый ящик.');
-            return;
-        }
-
-        await checkUnreadEmails(chatId, selectedMailbox);
-        await bot.answerCallbackQuery(query.id);
-    }
-});
-
 // Функция для проверки непрочитанных писем
 async function checkUnreadEmails(chatId, mailbox) {
     try {
@@ -125,7 +106,15 @@ async function checkUnreadEmails(chatId, mailbox) {
 
                 await bot.sendMessage(
                     chatId,
-                    `**От:** ${from}\n**Тема:** ${subject}\n**Дата:** ${date}`
+                    `**От:** ${from}\n**Тема:** ${subject}\n**Дата:** ${date}`,
+                    {
+                        reply_markup: {
+                            inline_keyboard: [
+                                [{ text: 'Удалить', callback_data: `delete_${mailbox.name}_${message.id}` }]
+                            ]
+                        },
+                        parse_mode: "Markdown" // Важно для отображения **жирного** текста
+                    }
                 );
             } catch (e) {
                 console.error('Ошибка получения данных письма:', e);
@@ -137,6 +126,60 @@ async function checkUnreadEmails(chatId, mailbox) {
         await bot.sendMessage(chatId, `Произошла ошибка при проверке писем для ${mailbox.name}.`);
     }
 }
+
+async function deleteEmail(chatId, gmail, userId, messageId, mailboxName, queryId) {
+    try {
+        await gmail.users.messages.delete({
+            userId: userId,
+            id: messageId,
+        });
+
+        await bot.sendMessage(chatId, `Письмо удалено из ${mailboxName}.`);
+        await bot.answerCallbackQuery(queryId, { text: 'Удалено!' }); // Подтверждение пользователю
+        console.log(`Письмо ${messageId} удалено из ${mailboxName}`);
+    } catch (error) {
+        console.error('Ошибка удаления письма:', error);
+        await bot.sendMessage(chatId, `Ошибка при удалении письма из ${mailboxName}.`);
+        await bot.answerCallbackQuery(queryId, { text: 'Ошибка удаления' });
+        throw error; // Пробрасываем ошибку, чтобы её можно было обработать выше
+    }
+}
+
+// Обработчик нажатия на кнопки
+bot.on('callback_query', async (query) => {
+    const chatId = query.message.chat.id;
+    const data = query.data;
+
+    if (data.startsWith('check_')) {
+        const mailboxKey = data.split('_')[1];
+        const selectedMailbox = mailboxes[mailboxKey];
+
+        if (!selectedMailbox) {
+            await bot.sendMessage(chatId, 'Ошибка: Неизвестный почтовый ящик.');
+            return;
+        }
+
+        await checkUnreadEmails(chatId, selectedMailbox);
+        await bot.answerCallbackQuery(query.id);
+    } else if (data.startsWith('delete_')) {
+        const [_, mailboxName, messageId] = data.split('_');
+        const selectedMailbox = mailboxes[mailboxName];
+
+        if (!selectedMailbox) {
+            await bot.sendMessage(chatId, 'Ошибка: Неизвестный почтовый ящик.');
+            return;
+        }
+
+        try {
+            const gmail = createGmailClient(selectedMailbox);
+            await deleteEmail(chatId, gmail, 'me', messageId, selectedMailbox.name, query.id); // Используем отдельную функцию
+        } catch (error) {
+            console.error('Ошибка удаления письма:', error);
+            await bot.sendMessage(chatId, 'Произошла ошибка при удалении письма.');
+            await bot.answerCallbackQuery(query.id, { text: 'Ошибка удаления' });
+        }
+    }
+});
 
 // Команда помощи
 bot.onText(/\/help/, async (msg) => {
