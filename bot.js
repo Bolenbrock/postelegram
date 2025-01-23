@@ -1,13 +1,19 @@
+const TelegramBot = require('node-telegram-bot-api');
+
+const botToken = process.env.TELEGRAM_BOT_TOKEN;
+
+const bot = new TelegramBot(botToken, { polling: true });
+
 // Настройки почтовых ящиков
 const mailboxes = {
     mailbox1: {
-        name: "aristoss007",
+        name: "Почтовый ящик 1",
         gmailClientId: process.env.GMAIL_CLIENT_ID,
         gmailClientSecret: process.env.GMAIL_CLIENT_SECRET,
         gmailRefreshToken: process.env.GMAIL_REFRESH_TOKEN,
     },
     mailbox2: {
-        name: "legalacefor",
+        name: "Почтовый ящик 2",
         gmailClientId: process.env.GMAIL_CLIENT_ID_2,
         gmailClientSecret: process.env.GMAIL_CLIENT_SECRET_2,
         gmailRefreshToken: process.env.GMAIL_REFRESH_TOKEN_2,
@@ -16,6 +22,8 @@ const mailboxes = {
 
 // Функция для создания Gmail клиента для каждого почтового ящика
 const createGmailClient = (mailbox) => {
+    const {google} = require('googleapis'); // Добавляем google здесь
+
     const oauth2Client = new google.auth.OAuth2(
         mailbox.gmailClientId,
         mailbox.gmailClientSecret
