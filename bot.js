@@ -9,13 +9,13 @@ const bot = new TelegramBot(botToken, { polling: true });
 // Настройки почтовых ящиков
 const mailboxes = {
  mailbox1: {
-     name: "Почтовый ящик 1",
+     name: "aristoss007",
      gmailClientId: process.env.GMAIL_CLIENT_ID,
      gmailClientSecret: process.env.GMAIL_CLIENT_SECRET,
      gmailRefreshToken: process.env.GMAIL_REFRESH_TOKEN,
  },
  mailbox2: {
-     name: "Почтовый ящик 2",
+     name: "legalacefor",
      gmailClientId: process.env.GMAIL_CLIENT_ID_2,
      gmailClientSecret: process.env.GMAIL_CLIENT_SECRET_2,
      gmailRefreshToken: process.env.GMAIL_REFRESH_TOKEN_2,
