@@ -37,11 +37,19 @@ const createGmailClient = (mailbox) => {
 };
 
 // Обработчик команды /start
-bot.onText(/\/start/, (msg) => {
+bot.onText(/\/start/, async (msg) => {
     const chatId = msg.chat.id;
-    bot.sendMessage(chatId, 'Бот запущен! Проверяем почту...');
-    // Эмулируем ввод команды /checkemail
-    bot.emit('text', { ...msg, text: '/checkemail' });
+    await bot.sendMessage(chatId, 'Бот запущен! Выберите почтовый ящик для проверки:');
+
+    const mailboxKeyboard = {
+        reply_markup: {
+            inline_keyboard: Object.keys(mailboxes).map(key => [
+                { text: mailboxes[key].name, callback_data: `check_${key}` }
+            ])
+        }
+    };
+
+    await bot.sendMessage(chatId, 'Выберите почтовый ящик для проверки:', mailboxKeyboard);
 });
 
 // Обработчик команды /checkemail
@@ -130,7 +138,7 @@ async function checkUnreadEmails(chatId, mailbox) {
     }
 }
 
-// Help command
+// Команда помощи
 bot.onText(/\/help/, async (msg) => {
     const chatId = msg.chat.id;
     await bot.sendMessage(chatId,
@@ -141,3 +149,4 @@ bot.onText(/\/help/, async (msg) => {
 });
 
 console.log('Бот запущен...');
+
