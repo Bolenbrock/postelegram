@@ -1,22 +1,14 @@
-
-
-import TelegramBot from 'node-telegram-bot-api';
-import { google } from 'googleapis';
-import dotenv from 'dotenv';
-
-dotenv.config();
-
-const bot = new TelegramBot(process.env.TELEGRAM_BOT_TOKEN, { polling: true });
-
 // Настройки почтовых ящиков
 const mailboxes = {
     mailbox1: {
+        name: "Почтовый ящик 1",
         name: "aristoss007",
         gmailClientId: process.env.GMAIL_CLIENT_ID,
         gmailClientSecret: process.env.GMAIL_CLIENT_SECRET,
         gmailRefreshToken: process.env.GMAIL_REFRESH_TOKEN,
     },
     mailbox2: {
+        name: "Почтовый ящик 2",
         name: "legalacefor",
         gmailClientId: process.env.GMAIL_CLIENT_ID_2,
         gmailClientSecret: process.env.GMAIL_CLIENT_SECRET_2,
@@ -39,19 +31,9 @@ const createGmailClient = (mailbox) => {
 };
 
 // Обработчик команды /start
-bot.onText(/\/start/, async (msg) => {
+bot.onText(/\/start/, (msg) => {
     const chatId = msg.chat.id;
-    await bot.sendMessage(chatId, 'Бот запущен! Выберите почтовый ящик для проверки:');
-
-    const mailboxKeyboard = {
-        reply_markup: {
-            inline_keyboard: Object.keys(mailboxes).map(key => [
-                { text: mailboxes[key].name, callback_data: `check_${key}` }
-            ])
-        }
-    };
-
-    await bot.sendMessage(chatId, 'Выберите почтовый ящик для проверки:', mailboxKeyboard);
+    bot.sendMessage(chatId, 'Бот запущен! Введите /help для списка команд.');
 });
 
 // Обработчик команды /checkemail
@@ -69,8 +51,27 @@ bot.onText(/\/checkemail/, async (msg) => {
     await bot.sendMessage(chatId, 'Выберите почтовый ящик для проверки:', mailboxKeyboard);
 });
 
+// Обработчик нажатия на кнопки
+bot.on('callback_query', async (query) => {
+    const chatId = query.message.chat.id;
+    const data = query.data;
+
+    if (data.startsWith('check_')) {
+        const mailboxKey = data.split('_')[1];
+        const selectedMailbox = mailboxes[mailboxKey];
+
+        if (!selectedMailbox) {
+            await bot.sendMessage(chatId, 'Ошибка: Неизвестный почтовый ящик.');
+            return;
+        }
+
+        await checkUnreadEmails(chatId, selectedMailbox);
+        await bot.answerCallbackQuery(query.id);
+    }
+});
+
 // Функция для проверки непрочитанных писем
-async function checkUnreadEmails(chatId, mailbox, mailboxKey) { // Добавляем параметр mailboxKey
+async function checkUnreadEmails(chatId, mailbox) {
     try {
         const gmail = createGmailClient(mailbox);
 
@@ -108,15 +109,7 @@ async function checkUnreadEmails(chatId, mailbox, mailboxKey) { // Добавл�
 
                 await bot.sendMessage(
                     chatId,
-                    `**От:** ${from}\n**Тема:** ${subject}\n**Дата:** ${date}`,
-                    {
-                        reply_markup: {
-                            inline_keyboard: [
-                                [{ text: 'Удалить', callback_data: `delete_${mailboxKey}_${message.id}` }] // Использовать mailboxKey
-                            ]
-                        },
-                        parse_mode: "Markdown" // Важно для отображения **жирного** текста
-                    }
+                    `**От:** ${from}\n**Тема:** ${subject}\n**Дата:** ${date}`
                 );
             } catch (e) {
                 console.error('Ошибка получения данных письма:', e);
@@ -129,72 +122,7 @@ async function checkUnreadEmails(chatId, mailbox, mailboxKey) { // Добавл�
     }
 }
 
-async function deleteEmail(chatId, gmail, userId, messageId, mailboxKey, queryId) {
-    try {
-        await gmail.users.messages.delete({
-            userId: userId,
-            id: messageId,
-        });
-
-        const mailbox = mailboxes[mailboxKey];
-        if (mailbox) {
-             await bot.sendMessage(chatId, `Письмо удалено из ${mailbox.name}.`);
-        } else {
-             await bot.sendMessage(chatId, `Письмо удалено.`);
-        }
-
-        await bot.answerCallbackQuery(queryId, { text: 'Удалено!' }); // Подтверждение пользователю
-        console.log(`Письмо ${messageId} удалено из ${mailboxKey}`);
-    } catch (error) {
-        console.error('Ошибка удаления письма:', error);
-        const mailbox = mailboxes[mailboxKey];
-        if (mailbox) {
-             await bot.sendMessage(chatId, `Ошибка при удалении письма из ${mailbox.name}.`);
-        } else {
-            await bot.sendMessage(chatId, `Ошибка при удалении письма.`);
-        }
-        await bot.answerCallbackQuery(queryId, { text: 'Ошибка удаления' });
-        throw error; // Пробрасываем ошибку, чтобы её можно было обработать выше
-    }
-}
-
-// Обработчик нажатия на кнопки
-bot.on('callback_query', async (query) => {
-    const chatId = query.message.chat.id;
-    const data = query.data;
-
-    if (data.startsWith('check_')) {
-        const mailboxKey = data.split('_')[1];
-        const selectedMailbox = mailboxes[mailboxKey];
-
-        if (!selectedMailbox) {
-            await bot.sendMessage(chatId, 'Ошибка: Неизвестный почтовый ящик.');
-            return;
-        }
-
-        await checkUnreadEmails(chatId, selectedMailbox, mailboxKey); // Передаём mailboxKey
-        await bot.answerCallbackQuery(query.id);
-    } else if (data.startsWith('delete_')) {
-        const [_, mailboxKey, messageId] = data.split('_');
-        const selectedMailbox = mailboxes[mailboxKey];
-
-        if (!selectedMailbox) {
-            await bot.sendMessage(chatId, 'Ошибка: Неизвестный почтовый ящик.');
-            return;
-        }
-
-        try {
-            const gmail = createGmailClient(selectedMailbox);
-            await deleteEmail(chatId, gmail, 'me', messageId, mailboxKey, query.id); // Используем mailboxKey
-        } catch (error) {
-            console.error('Ошибка удаления письма:', error);
-            await bot.sendMessage(chatId, 'Произошла ошибка при удалении письма.');
-            await bot.answerCallbackQuery(query.id, { text: 'Ошибка удаления' });
-        }
-    }
-});
-
-// Команда помощи
+// Help command
 bot.onText(/\/help/, async (msg) => {
     const chatId = msg.chat.id;
     await bot.sendMessage(chatId,
