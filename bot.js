@@ -1,21 +1,13 @@
 // Настройки почтовых ящиков
 const mailboxes = {
     mailbox1: {
-        name: "Почтовый ящик 1",
-<<<<<<< HEAD
         name: "aristoss007",
-=======
->>>>>>> parent of b6e3cb6 (rename postbox)
         gmailClientId: process.env.GMAIL_CLIENT_ID,
         gmailClientSecret: process.env.GMAIL_CLIENT_SECRET,
         gmailRefreshToken: process.env.GMAIL_REFRESH_TOKEN,
     },
     mailbox2: {
-        name: "Почтовый ящик 2",
-<<<<<<< HEAD
         name: "legalacefor",
-=======
->>>>>>> parent of b6e3cb6 (rename postbox)
         gmailClientId: process.env.GMAIL_CLIENT_ID_2,
         gmailClientSecret: process.env.GMAIL_CLIENT_SECRET_2,
         gmailRefreshToken: process.env.GMAIL_REFRESH_TOKEN_2,
