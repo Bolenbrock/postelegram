@@ -1,16 +1,20 @@
+import TelegramBot from 'node-telegram-bot-api';
+import { google } from 'googleapis';
+
+const botToken = process.env.TELEGRAM_BOT_TOKEN;
+
+const bot = new TelegramBot(botToken, { polling: true });
 
 // Настройки почтовых ящиков
 const mailboxes = {
     mailbox1: {
-        name: "Почтовый ящик 1",
-
+        name: "aristoss007",
         gmailClientId: process.env.GMAIL_CLIENT_ID,
         gmailClientSecret: process.env.GMAIL_CLIENT_SECRET,
         gmailRefreshToken: process.env.GMAIL_REFRESH_TOKEN,
     },
     mailbox2: {
-        name: "Почтовый ящик 2",
-
+        name: "legalacefor",
         gmailClientId: process.env.GMAIL_CLIENT_ID_2,
         gmailClientSecret: process.env.GMAIL_CLIENT_SECRET_2,
         gmailRefreshToken: process.env.GMAIL_REFRESH_TOKEN_2,
@@ -32,13 +36,7 @@ const createGmailClient = (mailbox) => {
 };
 
 // Обработчик команды /start
-bot.onText(/\/start/, (msg) => {
-    const chatId = msg.chat.id;
-    bot.sendMessage(chatId, 'Бот запущен! Введите /help для списка команд.');
-});
-
-// Обработчик команды /checkemail
-bot.onText(/\/checkemail/, async (msg) => {
+bot.onText(/\/start/, async (msg) => {
     const chatId = msg.chat.id;
 
     const mailboxKeyboard = {
@@ -51,6 +49,7 @@ bot.onText(/\/checkemail/, async (msg) => {
 
     await bot.sendMessage(chatId, 'Выберите почтовый ящик для проверки:', mailboxKeyboard);
 });
+
 
 // Обработчик нажатия на кнопки
 bot.on('callback_query', async (query) => {
@@ -128,7 +127,6 @@ bot.onText(/\/help/, async (msg) => {
     const chatId = msg.chat.id;
     await bot.sendMessage(chatId,
         'Доступные команды:\n' +
-        '/checkemail - Проверить непрочитанные письма\n' +
         '/help - Показать эту справку'
     );
 });
