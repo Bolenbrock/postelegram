@@ -1,3 +1,40 @@
+import TelegramBot from 'node-telegram-bot-api';
+import { google } from 'googleapis';
+
+const botToken = process.env.TELEGRAM_BOT_TOKEN;
+
+const bot = new TelegramBot(botToken, { polling: true });
+
+// Настройки почтовых ящиков
+const mailboxes = {
+    mailbox1: {
+        name: "aristoss007",
+        gmailClientId: process.env.GMAIL_CLIENT_ID,
+        gmailClientSecret: process.env.GMAIL_CLIENT_SECRET,
+        gmailRefreshToken: process.env.GMAIL_REFRESH_TOKEN,
+    },
+    mailbox2: {
+        name: "legalacefor",
+        gmailClientId: process.env.GMAIL_CLIENT_ID_2,
+        gmailClientSecret: process.env.GMAIL_CLIENT_SECRET_2,
+        gmailRefreshToken: process.env.GMAIL_REFRESH_TOKEN_2,
+    }
+};
+
+// Функция для создания Gmail клиента для каждого почтового ящика
+const createGmailClient = (mailbox) => {
+    const oauth2Client = new google.auth.OAuth2(
+        mailbox.gmailClientId,
+        mailbox.gmailClientSecret
+    );
+
+    oauth2Client.setCredentials({
+        refresh_token: mailbox.gmailRefreshToken,
+    });
+
+    return google.gmail({ version: 'v1', auth: oauth2Client });
+};
+
 // Обработчик команды /start
 bot.onText(/\/start/, async (msg) => {
     const chatId = msg.chat.id;
@@ -13,6 +50,7 @@ bot.onText(/\/start/, async (msg) => {
     await bot.sendMessage(chatId, 'Выберите почтовый ящик для проверки:', mailboxKeyboard);
 });
 
+
 // Обработчик нажатия на кнопки
 bot.on('callback_query', async (query) => {
     const chatId = query.message.chat.id;
@@ -27,13 +65,13 @@ bot.on('callback_query', async (query) => {
             return;
         }
 
-        await checkUnreadEmails(chatId, selectedMailbox, mailboxKey);
+        await checkUnreadEmails(chatId, selectedMailbox);
         await bot.answerCallbackQuery(query.id);
     }
 });
 
 // Функция для проверки непрочитанных писем
-async function checkUnreadEmails(chatId, mailbox, mailboxKey) {
+async function checkUnreadEmails(chatId, mailbox) {
     try {
         const gmail = createGmailClient(mailbox);
 
@@ -50,14 +88,6 @@ async function checkUnreadEmails(chatId, mailbox, mailboxKey) {
         }
 
         await bot.sendMessage(chatId, `У вас ${unreadMessages.length} непрочитанных писем в ${mailbox.name}.`);
-
-        // Определяем префикс или эмодзи для каждого ящика
-        const mailboxPrefix = {
-            mailbox1: '🔵', // Синий кружок для mailbox1
-            mailbox2: '🔴', // Красный кружок для mailbox2
-        };
-
-        const prefix = mailboxPrefix[mailboxKey] || '📧'; // По умолчанию используем эмодзи письма
 
         for (const message of unreadMessages) {
             try {
@@ -79,7 +109,7 @@ async function checkUnreadEmails(chatId, mailbox, mailboxKey) {
 
                 await bot.sendMessage(
                     chatId,
-                    `${prefix} **От:** ${from}\n**Тема:** ${subject}\n**Дата:** ${date}`
+                    `**От:** ${from}\n**Тема:** ${subject}\n**Дата:** ${date}`
                 );
             } catch (e) {
                 console.error('Ошибка получения данных письма:', e);
@@ -91,3 +121,14 @@ async function checkUnreadEmails(chatId, mailbox, mailboxKey) {
         await bot.sendMessage(chatId, `Произошла ошибка при проверке писем для ${mailbox.name}.`);
     }
 }
+
+// Help command
+bot.onText(/\/help/, async (msg) => {
+    const chatId = msg.chat.id;
+    await bot.sendMessage(chatId,
+        'Доступные команды:\n' +
+        '/help - Показать эту справку'
+    );
+});
+
+console.log('Бот запущен...');
