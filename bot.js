@@ -12,12 +12,14 @@ const mailboxes = {
         gmailClientId: process.env.GMAIL_CLIENT_ID,
         gmailClientSecret: process.env.GMAIL_CLIENT_SECRET,
         gmailRefreshToken: process.env.GMAIL_REFRESH_TOKEN,
+        emoji: "🔴" // Добавлен эмодзи для mailbox1
     },
     mailbox2: {
         name: "legalacefor",
         gmailClientId: process.env.GMAIL_CLIENT_ID_2,
         gmailClientSecret: process.env.GMAIL_CLIENT_SECRET_2,
         gmailRefreshToken: process.env.GMAIL_REFRESH_TOKEN_2,
+        emoji: "🔵" // Добавлен эмодзи для mailbox2
     }
 };
 
@@ -42,7 +44,7 @@ bot.onText(/\/start/, async (msg) => {
     const mailboxKeyboard = {
         reply_markup: {
             inline_keyboard: Object.keys(mailboxes).map(key => [
-                { text: mailboxes[key].name, callback_data: `check_${key}` }
+                { text: `${mailboxes[key].emoji} ${mailboxes[key].name}`, callback_data: `check_${key}` } // Добавлен эмодзи к тексту кнопки
             ])
         }
     };
@@ -83,11 +85,11 @@ async function checkUnreadEmails(chatId, mailbox) {
         const unreadMessages = response.data.messages;
 
         if (!unreadMessages || unreadMessages.length === 0) {
-            await bot.sendMessage(chatId, `У вас нет непрочитанных писем в ${mailbox.name}.`);
+            await bot.sendMessage(chatId, `У вас нет непрочитанных писем в ${mailbox.emoji} ${mailbox.name}.`); // Добавлен эмодзи в сообщение
             return;
         }
 
-        await bot.sendMessage(chatId, `У вас ${unreadMessages.length} непрочитанных писем в ${mailbox.name}.`);
+        await bot.sendMessage(chatId, `У вас ${unreadMessages.length} непрочитанных писем в ${mailbox.emoji} ${mailbox.name}.`); // Добавлен эмодзи в сообщение
 
         for (const message of unreadMessages) {
             try {
@@ -118,7 +120,7 @@ async function checkUnreadEmails(chatId, mailbox) {
         }
     } catch (error) {
         console.error('Ошибка проверки почты:', error);
-        await bot.sendMessage(chatId, `Произошла ошибка при проверке писем для ${mailbox.name}.`);
+        await bot.sendMessage(chatId, `Произошла ошибка при проверке писем для ${mailbox.emoji} ${mailbox.name}.`); // Добавлен эмодзи в сообщение
     }
 }
 
