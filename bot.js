@@ -8,7 +8,7 @@ const bot = new TelegramBot(botToken, { polling: true });
 // Настройки почтовых ящиков
 const mailboxes = {
     mailbox1: {
-        name: "aristoss007",
+        name: "aristosand",
         gmailClientId: process.env.GMAIL_CLIENT_ID,
         gmailClientSecret: process.env.GMAIL_CLIENT_SECRET,
         gmailRefreshToken: process.env.GMAIL_REFRESH_TOKEN,
